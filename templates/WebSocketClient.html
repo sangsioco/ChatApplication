@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask-SocketIO Chat</title>
+</head>
+<body>
+    <h1>Flask-SocketIO Chat</h1>
+    <ul id="messages"></ul>
+    <form id="message-form">
+        <input type="text" id="author-input" placeholder="Your name" autocomplete="off" required>
+        <input type="text" id="message-input" placeholder="Your message" autocomplete="off" required>
+        <button type="submit">Send</button>
+    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('message-form');
+        const authorInput = document.getElementById('author-input');
+        const messageInput = document.getElementById('message-input');
+        const messages = document.getElementById('messages');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const author = authorInput.value.trim();
+            const message = messageInput.value.trim();
+            if (author !== '' && message !== '') {
+                socket.emit('message', { user: author, message: message });
+                messageInput.value = '';
+            }
+        });
+
+        socket.on('message', function(data) {
+            const author = data.author;
+            const message = data.message;
+            const li = document.createElement('li');
+            li.textContent = `${author}: ${message}`;
+            messages.appendChild(li);
+        });
+
+        // Optional: Request all messages from a specific user
+        function requestAllMessages(author) {
+            socket.emit('get_all_messages', { user: author });
+        }
+
+        // Listen for all messages from a specific user
+        socket.on('get_all_messages', function(data) {
+            const author = data.author;
+            const messageList = data.messages;
+            messageList.forEach(message => {
+                const li = document.createElement('li');
+                li.textContent = `${author}: ${message}`;
+                messages.appendChild(li);
+            });
+        });
+    </script>
+</body>
+</html>
