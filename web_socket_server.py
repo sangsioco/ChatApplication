@@ -11,5 +11,5 @@ class WebSocketServer:
     def create_app(self, debug=False):
 
         app.debug = debug
-        socketio.init_app(app, cors_allowed_oridin="*")
+        socketio.init_app(app, cors_allowed_oridin="*") # Enable the CORS
         return app

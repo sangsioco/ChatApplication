@@ -1,48 +1,50 @@
 from web_socket_server import WebSocketServer, socketio, app
 from flask import render_template
+from flask_socketio import join_room, leave_room, send, emit
 
 app = WebSocketServer().create_app()
 message_storage = {}
 
 @socketio.on('message')
 def handle_message(data):
-    author = data.get('user')
+    username = data.get('username', 'Anonymous')
     message = data.get('message')
-    
-    if not author or not message:
-        return  # Ignore if author or message is not provided
-
-    print(f'Received message from {author}: {message}')
-
-    if author not in message_storage:
-        message_storage[author] = []
-    
-    message_storage[author].append(message)
-    
-    # Emit the new message to all connected clients
-    socketio.emit('message', {'author': author, 'message': message})
-
+    if message:
+        emit('message', {'username': username, 'message': message}, broadcast=True)
 
 @socketio.on('get_user_message')
 def handle_get_user_messages(data):
-    author = data.get('author')
+    username = data.get('username')
     
-    if not author:
-        return  # Ignore if author is not provided
+    if not username:
+        return  # Ignore if username is not provided
 
-    messages = message_storage.get(author, [])
-    socketio.emit('get_user_message', {'author': author, 'messages': messages})
+    messages = message_storage.get(username, [])
+    socketio.emit('get_user_message', {'username': username, 'messages': messages})
 
 @socketio.on('get_all_messages')
 def handle_get_all_messages(data):
-    author = data.get('user')
+    username = data.get('username')
     
-    if not author:
-        return  # Ignore if author is not provided
+    if not username:
+        return  # Ignore if username is not provided
 
-    messages = message_storage.get(author, [])
-    socketio.emit('get_all_messages', {'author': author, 'messages': messages})
+    messages = message_storage.get(username, [])
+    socketio.emit('get_all_messages', {'username': username, 'messages': messages})
 
+@socketio.on('join')
+def on_join(data):
+    username = data.get('username')
+    room = data.get('room')
+    if username and room:
+        join_room(room)
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    room = data['room']
+    leave_room(room)
+    send(f'{username} has left the room.', room=room)
 
 @socketio.on('connect')
 def handle_connect():

@@ -3,56 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask-SocketIO Chat</title>
+    <title>Flask-SocketIO Chat Room</title>
+    <style>
+        #chatControls {
+            margin-top: 20px;
+        }
+
+        #messages {
+            margin-bottom: 20px; 
+        }
+
+        #leaveButton {
+            margin-top: 20px; 
+        }
+    </style>
 </head>
 <body>
     <h1>Flask-SocketIO Chat</h1>
-    <ul id="messages"></ul>
-    <form id="message-form">
-        <input type="text" id="author-input" placeholder="Your name" autocomplete="off" required>
-        <input type="text" id="message-input" placeholder="Your message" autocomplete="off" required>
-        <button type="submit">Send</button>
-    </form>
+
+    <button id="join-room-button">Join Room</button>
+    <div id="join-room-form" style="display: none;">
+        <input type="text" id="username" placeholder="Username" autocomplete="off" required>
+        <input type="text" id="room" placeholder="Room name" autocomplete="off" required>
+        <button id="join-button">Join</button>
+    </div>
+
+    <div id="chatControls" style="display:none;">
+        <h2 id="welcomeHeader"></h2>
+        <h3 id="roomHeader"></h3>
+        <ul id="messages"></ul>
+        <form id="message-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
+        <button id="leaveButton">Leave Room</button>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
     <script>
         const socket = io();
-        const form = document.getElementById('message-form');
-        const authorInput = document.getElementById('author-input');
-        const messageInput = document.getElementById('message-input');
-        const messages = document.getElementById('messages');
+        let room = '';
+        let username = '';
 
-        form.addEventListener('submit', function(event) {
+        const joinRoomButton = document.getElementById('join-room-button');
+        const joinForm = document.getElementById('join-room-form');
+        const chatControls = document.getElementById('chatControls');
+        const messageForm = document.getElementById('message-form');
+        const messages = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const welcomeHeader = document.getElementById('welcomeHeader');
+        const roomHeader = document.getElementById('roomHeader');
+        const leaveButton = document.getElementById('leaveButton');
+
+        joinRoomButton.addEventListener('click', function() {
+            joinForm.style.display = 'block';
+            joinRoomButton.style.display = 'none';
+        });
+
+        document.getElementById('join-button').addEventListener('click', function() {
+            username = document.getElementById('username').value.trim();
+            room = document.getElementById('room').value.trim();
+            if (username !== '' && room !== '') {
+                socket.emit('join', { username, room });
+                welcomeHeader.textContent = `Hello, ${username}`;
+                roomHeader.textContent = `Welcome to ${room} chat room`;
+                chatControls.style.display = 'block';
+                joinForm.style.display = 'none';
+            }
+        });
+
+        leaveButton.addEventListener('click', function() {
+            socket.emit('leave', { username, room });
+            chatControls.style.display = 'none';
+            joinRoomButton.style.display = 'block';
+        });
+
+        messageForm.addEventListener('submit', function(event) {
             event.preventDefault();
-            const author = authorInput.value.trim();
             const message = messageInput.value.trim();
-            if (author !== '' && message !== '') {
-                socket.emit('message', { user: author, message: message });
+            if (message !== '') {
+                socket.emit('message', { username, message, room });
                 messageInput.value = '';
             }
         });
 
         socket.on('message', function(data) {
-            const author = data.author;
+            const username = data.username;
             const message = data.message;
             const li = document.createElement('li');
-            li.textContent = `${author}: ${message}`;
+            li.textContent = `${username}: ${message}`;
             messages.appendChild(li);
-        });
-
-        // Optional: Request all messages from a specific user
-        function requestAllMessages(author) {
-            socket.emit('get_all_messages', { user: author });
-        }
-
-        // Listen for all messages from a specific user
-        socket.on('get_all_messages', function(data) {
-            const author = data.author;
-            const messageList = data.messages;
-            messageList.forEach(message => {
-                const li = document.createElement('li');
-                li.textContent = `${author}: ${message}`;
-                messages.appendChild(li);
-            });
         });
     </script>
 </body>
