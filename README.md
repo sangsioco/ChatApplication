@@ -8,10 +8,10 @@ This chat-application uses WebSockets, allowing users to communicate in real-tim
 
 File Structure
 
-|-- templates
-|   |-- WebSocketClient.html
-|-- app.py
-|-- web_socket_server.py
+|-- templates  
+|   |-- WebSocketClient.html  
+|-- app.py  
+|-- web_socket_server.py  
 
 
 Installation: 
